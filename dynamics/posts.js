@@ -19,4 +19,12 @@ window.POSTS = [
     tags: ["Python", "Recon", "Automation"],
     url: "static/templates/toolex.html",
   },
+  {
+    kind: "writeup",
+    title: "HTB — Expressway",
+    date: "2026-06-14",
+    summary: "Recon completo, enumeración servicios UDP y escalada de privilegios vía sudo vuln version.",
+    tags: ["HTB", "Linux", "UDP"],
+    url: "static/writeups/expressway_htb.html",
+  },
 ];

