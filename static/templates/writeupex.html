@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- 📝 PLANTILLA — duplica este archivo, renómbralo y edita el contenido.
+     Luego añade una entrada en /portfolio/posts.js con la ruta del nuevo archivo. -->
+<title>Título del Write-up — Eduardo Juarez</title>
+<meta name="description" content="Resumen corto del write-up para SEO y previews." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="../article.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="nav">
+  <a href="../index.html" class="logo"><span class="bracket">[</span>eduardo<span class="cursor">_</span><span class="bracket">]</span></a>
+  <nav>
+    <a href="../index.html#posts">publicaciones</a>
+    <a href="../index.html#contact">contacto</a>
+  </nav>
+</header>
+
+<main class="article">
+  <a class="back" href="../index.html#posts">← volver a publicaciones</a>
+
+  <header class="meta">
+    <span class="kind">Write-up</span>
+    <h1>HTB — Sample Machine</h1>
+    <div class="sub">
+      <span>📅 12 Oct 2025</span>
+      <span class="dot-sep">·</span>
+      <span>⏱️ 8 min de lectura</span>
+      <span class="dot-sep">·</span>
+      <span>🎯 Dificultad: Easy</span>
+    </div>
+    <div class="tags-mini">
+      <span>HTB</span><span>Linux</span><span>Web</span><span>PrivEsc</span>
+    </div>
+  </header>
+
+  <p>
+    Breve introducción a la máquina: qué es, por qué la elegí y qué se aprende.
+    Mantén este resumen en 2–3 frases para enganchar al lector.
+  </p>
+
+  <h2>Reconocimiento</h2>
+  <p>Comencé con un escaneo de puertos completo con Nmap:</p>
+  <pre><code>nmap -sC -sV -p- -T4 10.10.10.10 -oN nmap/initial.txt</code></pre>
+  <p>Resultado relevante:</p>
+  <pre><code>22/tcp  open  ssh     OpenSSH 8.2
+80/tcp  open  http    nginx 1.18.0</code></pre>
+
+  <h2>Enumeración Web</h2>
+  <p>El servicio web en el puerto 80 expone un panel de login. Fuzzing de directorios:</p>
+  <pre><code>gobuster dir -u http://10.10.10.10 -w /usr/share/wordlists/dirb/common.txt</code></pre>
+
+  <div class="callout">
+    <p><strong>Hallazgo:</strong> el endpoint <code>/api/v1/users</code> responde sin autenticación y filtra emails.</p>
+  </div>
+
+  <h2>Explotación</h2>
+  <p>Detalla el vector: payloads, request HTTP, captura en Burp, etc.</p>
+  <pre><code>POST /login HTTP/1.1
+Host: target
+Content-Type: application/json
+
+{"user":"admin","pass":"' OR 1=1--"}</code></pre>
+
+  <h2>Escalada de privilegios</h2>
+  <p>Una vez con shell de bajo privilegio, encontré un cron ejecutando un script con permisos débiles:</p>
+  <pre><code>* * * * * root /opt/backup.sh</code></pre>
+
+  <div class="callout warn">
+    <p>El script era escribible por cualquier usuario → reverse shell como root.</p>
+  </div>
+
+  <h2>Remediación</h2>
+  <ul>
+    <li>Restringir permisos de scripts ejecutados por root (<code>chmod 700</code>, <code>chown root:root</code>).</li>
+    <li>Validar autenticación en todos los endpoints de la API.</li>
+    <li>Parametrizar consultas SQL.</li>
+  </ul>
+
+  <h2>Conclusión</h2>
+  <p>Resumen de lo aprendido y referencias útiles.</p>
+</main>
+
+<footer>
+  <p>© <span id="year"></span> Eduardo Andreco Juarez Salgado</p>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

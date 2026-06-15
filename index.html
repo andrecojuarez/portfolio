@@ -20,6 +20,7 @@
     <a href="#skills">skills</a>
     <a href="#experience">experiencia</a>
     <a href="#education">educación</a>
+    <a href="#posts">publicaciones</a>
     <a href="#contact">contacto</a>
   </nav>
 </header>
@@ -167,8 +168,23 @@
     </div>
   </section>
 
+  <section id="posts" class="block">
+    <h2><span class="num">06</span> Publicaciones</h2>
+    <p class="prose" style="margin-bottom:2rem;">
+      Write-ups de máquinas y retos, además de herramientas que voy desarrollando.
+    </p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-filter="all" role="tab">Todo</button>
+      <button class="tab" data-filter="writeup" role="tab">Write-ups</button>
+      <button class="tab" data-filter="tool" role="tab">Tools</button>
+    </div>
+
+    <div id="posts-grid" class="posts-grid"></div>
+  </section>
+
   <section id="contact" class="block contact">
-    <h2><span class="num">05</span> Contacto</h2>
+    <h2><span class="num">07</span> Contacto</h2>
     <p class="prose">
       ¿Buscas a alguien para auditar tu aplicación web o sumar a tu equipo de seguridad?
       Hablemos.
@@ -194,6 +210,7 @@
   <p>© <span id="year"></span> Eduardo Andreco Juarez Salgado · Construido con HTML, CSS y JS nativos.</p>
 </footer>
 
+<script src="posts.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

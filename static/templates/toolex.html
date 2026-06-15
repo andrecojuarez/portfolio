@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- 🛠️ PLANTILLA TOOL — duplica este archivo, renómbralo y edita el contenido.
+     Luego añade una entrada en /portfolio/posts.js con la ruta del nuevo archivo. -->
+<title>Nombre de la herramienta — Eduardo Juarez</title>
+<meta name="description" content="Descripción breve de la herramienta." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="../article.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="nav">
+  <a href="../index.html" class="logo"><span class="bracket">[</span>eduardo<span class="cursor">_</span><span class="bracket">]</span></a>
+  <nav>
+    <a href="../index.html#posts">publicaciones</a>
+    <a href="../index.html#contact">contacto</a>
+  </nav>
+</header>
+
+<main class="article">
+  <a class="back" href="../index.html#posts">← volver a publicaciones</a>
+
+  <header class="meta">
+    <span class="kind">Tool</span>
+    <h1>recon-runner</h1>
+    <div class="sub">
+      <span>📅 02 Nov 2025</span>
+      <span class="dot-sep">·</span>
+      <span>🐍 Python 3.11+</span>
+      <span class="dot-sep">·</span>
+      <span>📦 <a href="#">GitHub</a></span>
+    </div>
+    <div class="tags-mini">
+      <span>Python</span><span>Recon</span><span>Automation</span>
+    </div>
+  </header>
+
+  <p>
+    <strong>recon-runner</strong> orquesta Nmap, Gobuster y Nuclei contra un target,
+    consolidando resultados en un reporte Markdown listo para entregar.
+  </p>
+
+  <h2>Instalación</h2>
+  <pre><code>git clone https://github.com/usuario/recon-runner
+cd recon-runner
+pip install -r requirements.txt</code></pre>
+
+  <h2>Uso</h2>
+  <pre><code>python recon.py --target 10.10.10.10 --out report.md</code></pre>
+
+  <h3>Opciones</h3>
+  <ul>
+    <li><code>--target</code> — IP o dominio objetivo (requerido).</li>
+    <li><code>--out</code> — Archivo de salida en Markdown.</li>
+    <li><code>--fast</code> — Solo puertos top-1000.</li>
+  </ul>
+
+  <h2>Cómo funciona</h2>
+  <p>El flujo interno es simple:</p>
+  <ol>
+    <li>Escaneo de puertos con Nmap (<code>-sV -sC</code>).</li>
+    <li>Para cada puerto HTTP detectado, lanza Gobuster con wordlist configurable.</li>
+    <li>Pasa las URLs descubiertas a Nuclei para detección de CVEs conocidos.</li>
+    <li>Compila todo en un Markdown estructurado.</li>
+  </ol>
+
+  <div class="callout warn">
+    <p>Úsalo solo contra objetivos para los que tengas autorización explícita.</p>
+  </div>
+
+  <h2>Snippet clave</h2>
+  <pre><code>def run_nmap(target: str) -> dict:
+    result = subprocess.run(
+        ["nmap", "-sV", "-sC", "-oX", "-", target],
+        capture_output=True, text=True, check=True,
+    )
+    return parse_nmap_xml(result.stdout)</code></pre>
+
+  <h2>Roadmap</h2>
+  <ul>
+    <li>Soporte para múltiples targets desde archivo.</li>
+    <li>Output HTML con plantilla.</li>
+    <li>Integración con Discord/Slack para notificaciones.</li>
+  </ul>
+</main>
+
+<footer>
+  <p>© <span id="year"></span> Eduardo Andreco Juarez Salgado</p>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

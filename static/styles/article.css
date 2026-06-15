@@ -1,0 +1,84 @@
+/* Estilos para páginas de artículo (write-ups y tools) */
+.article {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 3rem clamp(1.2rem, 4vw, 3rem) 6rem;
+  position: relative; z-index: 2;
+}
+.article .back {
+  font-family: var(--mono); font-size: .82rem; color: var(--muted);
+  display: inline-flex; align-items: center; gap: .4rem;
+  margin-bottom: 2.5rem; transition: color .2s;
+}
+.article .back:hover { color: var(--accent); }
+
+.article header.meta {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2rem; margin-bottom: 2.5rem;
+}
+.article .kind {
+  font-family: var(--mono); font-size: .7rem;
+  padding: .3rem .6rem; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: .14em;
+  background: var(--bg-2); border: 1px solid var(--border); color: var(--accent);
+}
+.article h1 {
+  font-size: clamp(2rem, 4vw, 3rem); font-weight: 700;
+  letter-spacing: -.03em; line-height: 1.1;
+  margin: 1.2rem 0 1rem;
+}
+.article .sub {
+  color: var(--muted); font-family: var(--mono); font-size: .85rem;
+  display: flex; gap: 1rem; flex-wrap: wrap;
+}
+.article .sub .dot-sep { color: var(--border); }
+
+.article .tags-mini { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: 1rem; }
+.article .tags-mini span {
+  font-family: var(--mono); font-size: .72rem; color: var(--muted);
+  padding: .2rem .55rem; border: 1px solid var(--border); border-radius: 4px;
+}
+
+.article h2 {
+  font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em;
+  margin: 3rem 0 1rem; display: flex; align-items: baseline; gap: .7rem;
+}
+.article h2::before {
+  content: "#"; color: var(--accent); font-family: var(--mono); font-weight: 400;
+}
+.article h3 { font-size: 1.15rem; font-weight: 600; margin: 2rem 0 .8rem; }
+.article p { color: var(--muted); font-size: 1rem; margin-bottom: 1.1rem; line-height: 1.75; }
+.article p strong { color: var(--text); font-weight: 500; }
+.article a:not(.back):not(.cover) { color: var(--accent); border-bottom: 1px dashed var(--accent-dim); }
+.article ul, .article ol { color: var(--muted); margin: 0 0 1.2rem 1.4rem; }
+.article li { margin-bottom: .4rem; }
+
+.article code {
+  font-family: var(--mono); font-size: .85em;
+  background: var(--bg-2); border: 1px solid var(--border);
+  padding: .1rem .4rem; border-radius: 4px; color: var(--accent);
+}
+.article pre {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.2rem 1.4rem;
+  overflow-x: auto; margin: 1rem 0 1.4rem;
+  font-family: var(--mono); font-size: .82rem; line-height: 1.65;
+  color: var(--text);
+}
+.article pre code { background: none; border: none; padding: 0; color: inherit; }
+
+.article blockquote {
+  border-left: 3px solid var(--accent);
+  padding: .4rem 0 .4rem 1.2rem; margin: 1.4rem 0;
+  color: var(--text); font-style: italic;
+  background: linear-gradient(90deg, rgba(0,255,156,0.04), transparent);
+}
+
+.callout {
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  background: var(--surface); border-radius: 8px;
+  padding: 1rem 1.2rem; margin: 1.4rem 0;
+}
+.callout.warn { border-left-color: #ffbd2e; }
+.callout.danger { border-left-color: var(--danger); }
+.callout p:last-child { margin-bottom: 0; }
