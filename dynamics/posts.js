@@ -9,7 +9,7 @@ window.POSTS = [
     date: "2025-10-12",
     summary: "Recon completo, enumeración web y escalada de privilegios vía cron mal configurado.",
     tags: ["HTB", "Linux", "Web"],
-    url: "writeups/sample-machine.html",
+    url: "static/templates/writeupex.html",
   },
   {
     kind: "tool",
@@ -17,6 +17,6 @@ window.POSTS = [
     date: "2025-11-02",
     summary: "Script en Python que orquesta Nmap, Gobuster y Nuclei contra un target y genera un reporte Markdown.",
     tags: ["Python", "Recon", "Automation"],
-    url: "tools/recon-runner.html",
+    url: "static/templates/toolex.html",
   },
 ];
