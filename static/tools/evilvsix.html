@@ -19,13 +19,13 @@
 <header class="nav">
   <a href="../../index.html" class="logo"><span class="bracket">[</span>AndrecoJS<span class="cursor">_</span><span class="bracket">]</span></a>
   <nav>
-    <a href="../../index.html#posts">publicaciones</a>
-    <a href="../../index.html#contact">contacto</a>
+    <a href="../../index.html#posts">posts</a>
+    <a href="../../index.html#contact">contact</a>
   </nav>
 </header>
 
 <main class="article">
-  <a class="back" href="../../index.html#posts">← volver a publicaciones</a>
+  <a class="back" href="../../index.html#posts">← return to posts</a>
 
   <header class="meta">
     <span class="kind">Tool</span>
@@ -40,12 +40,12 @@
   </header>
 
   <p>
-    <strong>Evil VSIX Extension</strong> es una extensión VSIX desarrollada como prueba de concepto para evaluar riesgos de seguridad en entornos de desarrollo. Demuestra técnicas de ejecución de código mediante extensiones de VS Code y permite analizar vectores de ataque relacionados con la cadena de suministro de software y la confianza en complementos de terceros.
+    <strong>Evil VSIX Extension</strong> is a VSIX extension developed as a proof of concept to evaluate security risks in development environments. It demonstrates code execution techniques using VS Code extensions and enables the analysis of attack vectors related to the software supply chain and trust in third-party plugins.
   </p>
 
-  <h2>Creacion</h2>
+  <h2>Creation</h2>
   <p>
-    Se crea la siguiente estructura de proyecto
+    The following project structure is created:
   </p>
   <pre><code>.
 ├── [Content_Types].xml
@@ -54,7 +54,7 @@
     └── package.js
   </code></pre>
   <p>
-    En el archivo <strong>extension/package.js</strong>
+    In the <strong>extension/package.js</strong> file
   </p>
   <pre><code>{
   "name": "devtools-helper",
@@ -65,9 +65,9 @@
   "main": "./extension.js",
   "contributes": {}
 }</code></pre>
-  <p>Asegurate de tener la version correcta en el parametro version y de que activationEvents este seteado como ["*"] asi ejecutara todo lo del codigo</p>
+  <p>Make sure you have the correct version in the <code>version</code> parameter and that <code>activationEvents</code> is set to <code>["*"]</code> so that all the code executes.</p>
   <p>
-    El el archivo <strong>extension/extension.js</strong>
+    In the <strong>extension/extension.js</strong> file.
   </p>
   <pre><code>const cp = require('child_process');
 exports.activate = function() {
@@ -75,60 +75,60 @@ exports.activate = function() {
 }
 exports.deactivate = function() {}</code></pre>
   <p>
-    Para generar el Payload puedes usar uso de la herramienta <strong>msfvenom</strong> solo asegurate de encodear el parametro en base64
+    To generate the payload, you can use the <strong>msfvenom</strong> tool; just make sure to encode the parameter in base64.
   </p>
 
-  <h2>Uso</h2>
-  <p>Ponerse en escucha con netcat</p>
-  <p>Basta con ejecutarlo en el sistema con VSCode</p>
+  <h2>Usage</h2>
+  <p>Set up a listener using netcat.</p>
+  <p>Simply run it on the system using VS Code.</p>
 
-  <h2>Cómo funciona</h2>
+  <h2>How it works</h2>
 
 <p>
-  Una extensión VSIX es un paquete utilizado por Visual Studio Code para distribuir funcionalidades adicionales.
-  Cuando una extensión es instalada, VS Code interpreta su archivo de configuración y carga el código JavaScript
-  asociado a la extensión.
+  A VSIX extension is a package used by Visual Studio Code to distribute additional functionality.
+  When an extension is installed, VS Code interprets its configuration file and loads the JavaScript code
+  associated with the extension.
 </p>
 
 <p>
-  Este comportamiento es legítimo y forma parte del funcionamiento normal del editor. Sin embargo, una extensión
-  maliciosa puede aprovechar el modelo de confianza de VS Code para ejecutar código arbitrario en el sistema de la víctima.
+  This behavior is legitimate and part of the editor's normal operation. However, a malicious
+  extension can exploit VS Code's trust model to execute arbitrary code on the victim's system.
 </p>
 
 <p>
-  En este proyecto se demuestra cómo una extensión aparentemente inofensiva puede utilizar eventos de activación
-  automáticos para ejecutar código tan pronto como VS Code la cargue.
+  This project demonstrates how a seemingly harmless extension can use automatic activation
+  events to execute code as soon as VS Code loads it.
 </p>
 
 <p>
-  Debido a que las extensiones se ejecutan con los permisos del usuario actual, estas pueden interactuar con el
-  sistema operativo, acceder a archivos locales, realizar conexiones de red o ejecutar procesos externos.
+  Since extensions run with the current user's permissions, they can interact with the
+  operating system, access local files, establish network connections, or execute external processes.
 </p>
 
 <p>
-  Este tipo de técnica suele clasificarse como un ataque de cadena de suministro (Supply Chain Attack), ya que
-  el usuario confía en una extensión aparentemente legítima que termina ejecutando acciones no autorizadas.
+  This type of technique is typically classified as a supply chain attack, as
+  the user trusts a seemingly legitimate extension that ends up performing unauthorized actions.
 </p>
 
 <p>
-  La prueba de concepto presentada tiene fines educativos y de investigación, permitiendo comprender los riesgos
-  asociados a la instalación de extensiones de terceros en entornos de desarrollo.
+  The presented proof of concept is intended for educational and research purposes,
+  helping to understand the risks associated with installing third-party extensions in development environments.
 </p>
 
-<p>El flujo de ejecución es el siguiente:</p>
+<p>The execution flow is as follows:</p>
 
 <ol>
-  <li>El usuario instala la extensión <code>.vsix</code> en Visual Studio Code.</li>
-  <li>VS Code lee el archivo <code>package.json</code> para identificar el punto de entrada de la extensión.</li>
-  <li>Los eventos definidos en <code>activationEvents</code> determinan cuándo debe cargarse la extensión.</li>
-  <li>Al cumplirse la condición de activación, VS Code ejecuta el archivo <code>extension.js</code>.</li>
-  <li>La función <code>activate()</code> se ejecuta automáticamente con los permisos del usuario actual.</li>
-  <li>El código de la extensión puede interactuar con recursos locales y realizar acciones definidas por el desarrollador.</li>
-  <li>La ejecución ocurre dentro de un contexto considerado confiable por el usuario y por el propio editor.</li>
+  <li>The user installs the <code>.vsix</code> extension in Visual Studio Code.</li>
+  <li>VS Code reads the <code>package.json</code> file to identify the extension's entry point.</li>
+  <li>Events defined in <code>activationEvents</code> determine when the extension should load.</li>
+  <li>When the activation condition is met, VS Code executes the <code>extension.js</code> file.</li>
+  <li>The <code>activate()</code> function runs automatically with the current user's permissions.</li>
+  <li>The extension's code can interact with local resources and perform actions defined by the developer.</li>
+  <li>Execution takes place within a context considered trusted by both the user and the editor itself.</li>
 </ol>
 
   <div class="callout warn">
-    <p>Úsalo solo contra objetivos para los que tengas autorización explícita.</p>
+    <p>Use this only against targets for which you have explicit authorization.</p>
   </div>
 </main>
 

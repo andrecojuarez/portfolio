@@ -5,8 +5,10 @@ document.getElementById('year').textContent = new Date().getFullYear();
 const term = document.getElementById('term');
 const lines = [
   { t: '<span class="c">$</span> whoami', d: 400 },
-  { t: 'eduardo — junior penetration tester', d: 600 },
+  { t: 'AndrecoJS — Penetration tester', d: 600 },
   { t: '<span class="c">$</span> cat ./certs.txt', d: 700 },
+  { t: '<span class="y">✓</span> Certified Penetration Testing Specialist (CPTS)', d: 600 },
+  { t: '  <span class="m">no: HTBCERT-DEC6F1A841</span>', d: 500 },
   { t: '<span class="y">✓</span> eLearnSecurity Junior Penetration Tester (eJPT)', d: 600 },
   { t: '  <span class="m">id: 160743036</span>', d: 500 },
   { t: '<span class="c">$</span> nmap -sV target.local', d: 800 },
